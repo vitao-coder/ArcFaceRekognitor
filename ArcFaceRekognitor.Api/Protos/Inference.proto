@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option csharp_namespace = "ArcFaceRekognitor.Api";
+option go_package = "pb/arcFaceRekognitor";
+
+package inference;
+
+service Inference { 
+  rpc Detector (DetectionRequest) returns (DetectionReply);
+}
+
+message DetectionRequest {  
+	string request_id = 1;  
+	bytes image_bytes1 = 2;
+	bytes image_bytes2 = 3;
+}
+
+message DetectionReply {
+  string message = 1;
+}
