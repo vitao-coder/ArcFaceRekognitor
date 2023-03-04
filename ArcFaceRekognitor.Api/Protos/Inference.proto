@@ -6,15 +6,32 @@ option go_package = "pb/arcFaceRekognitor";
 package inference;
 
 service Inference { 
-  rpc Detector (DetectionRequest) returns (DetectionReply);
+  rpc Comparator (ComparatorRequest) returns (ComparatorReply);
+  rpc Detector (DetectorRequest) returns (DetectorReply);
 }
 
-message DetectionRequest {  
+message ComparatorRequest {  
 	string request_id = 1;  
 	bytes image_bytes1 = 2;
 	bytes image_bytes2 = 3;
 }
 
-message DetectionReply {
-  string message = 1;
+message ComparatorReply {
+  double score = 1;
+  string error = 2;
+}
+
+message DetectorRequest {  
+	string request_id = 1;  
+	bytes image_bytes = 2;
+}
+
+message DetectorReply {
+  float score = 1;
+  float boxLeft = 2;
+  float boxRight = 3;
+  float boxBottom = 4;
+  float boxTop = 5;
+  repeated float landmark = 6 [packed=false];
+  string error = 7;
 }

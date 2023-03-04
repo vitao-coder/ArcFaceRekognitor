@@ -1,6 +1,7 @@
 ﻿using OpenCvSharp;
 using ArcFaceRekognitor.Api.Models;
 using System.Drawing;
+using Microsoft.AspNetCore.Components.Forms;
 
 namespace ArcFaceRekognitor.Api.FaceRecognition
 {
@@ -40,6 +41,7 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
                 Register(image, System.IO.Path.GetFileNameWithoutExtension(fileName));
             }
         }
+
         private Bitmap? getBitmapFromBytes(byte[] image)
         {
             using (var ms = new MemoryStream(image))
@@ -49,27 +51,70 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
 
             return null;
         }
-        public double CompareImage(byte[] imageBytes1, byte[]imageBytes2)
+
+        public async Task<double> CompareImage(byte[] imageBytes1, byte[]imageBytes2)
         {
             var bitmap1 = getBitmapFromBytes(imageBytes1);
             var bitmap2 = getBitmapFromBytes(imageBytes2);
 
-            return CompareImage(bitmap1!, bitmap2!);
+            return await CompareImage(bitmap1!, bitmap2!);
         }
 
-        public double CompareImage(System.Drawing.Bitmap bitmap1, System.Drawing.Bitmap bitmap2)
+        public async Task<double> CompareImage(System.Drawing.Bitmap bitmap1, System.Drawing.Bitmap bitmap2)
         {
             Mat image1 = OpenCvSharp.Extensions.BitmapConverter.ToMat(bitmap1);
             Mat image2 = OpenCvSharp.Extensions.BitmapConverter.ToMat(bitmap2);
 
-            List<PredictionBox> pbs1 = detector.Detect(image1, dete_threshold);
+
+            var TaskDetectPb1 = Task.Run(() =>
+            {
+                List<PredictionBox> pbs1 = detector.Detect(image1, dete_threshold);
+                return pbs1;
+            });
+
+            var TaskDetectPb2 = Task.Run(() =>
+            {
+                List<PredictionBox> pbs2 = detector.Detect(image2, dete_threshold);
+                return pbs2;
+            });
+
+
+            var TaskExtractPb1 = Task.Run(async () =>
+            {
+                var pbs1 = await TaskDetectPb1;
+                float[] embedding1 = recognizer.Extract(image1, pbs1[0].Landmark);
+                return embedding1;
+            });
+
+
+            var TaskExtractPb2 = Task.Run(async () =>
+            {
+                var pbs2 = await TaskDetectPb2;
+                float[] embedding2 = recognizer.Extract(image2, pbs2[0].Landmark);
+                return embedding2;
+            });
+
+
+            /*List<PredictionBox> pbs1 = detector.Detect(image1, dete_threshold);
+            float[] embedding1 = recognizer.Extract(image1, pbs1[0].Landmark);
 
             List<PredictionBox> pbs2 = detector.Detect(image2, dete_threshold);
+            float[] embedding2 = recognizer.Extract(image2, pbs2[0].Landmark);*/
+            float[] embedding1 = await TaskExtractPb1;
+            float[] embedding2 = await TaskExtractPb2;
 
-            float[] embedding1 = recognizer.Extract(image1, pbs1[0].Landmark);
-            float[] embedding2 = recognizer.Extract(image2, pbs2[0].Landmark);
+            return await CompareImage(embedding1, embedding2);
+        }
 
-            return Compare(embedding1, embedding2);
+        public async Task<double> CompareImage(float[] embeddingImage1, float[] embeddingImage2)
+        {
+            var TaskCompare = Task.Run(() =>
+            {
+               var resultCompare = Compare(embeddingImage1, embeddingImage2);
+                return resultCompare;
+            });
+
+            return await TaskCompare;
         }
 
         public int Register(Mat image, string user_id)
@@ -86,6 +131,34 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
                     return 3;
             faces_embedding.Add(user_id, embedding);
             return 0;
+        }
+
+        public async Task<PredictionBox> DetectImage(byte[] imageBytes)
+        {
+            var bitmap = getBitmapFromBytes(imageBytes);
+
+            return await DetectImage(bitmap);
+        }
+
+        public async Task<PredictionBox> DetectImage(System.Drawing.Bitmap bitmap)
+        {
+            var taskDetect = Task.Run(() => {
+
+                Mat image = OpenCvSharp.Extensions.BitmapConverter.ToMat(bitmap);
+
+                var detection = detector.Detect(image, dete_threshold);
+                if (detection.Count > 1) throw new InvalidOperationException("More than one face detected");
+                if (detection.Count == 0) throw new InvalidOperationException("Not detected any face");
+
+
+                var detected = detection[0];
+                var embedding = recognizer.Extract(image, detected.Landmark);
+                detected.Landmark = embedding;
+
+                return detected;
+            });
+
+            return await taskDetect;
         }
 
         public Dictionary<string, PredictionBox> Recognize(System.Drawing.Bitmap bitmap)

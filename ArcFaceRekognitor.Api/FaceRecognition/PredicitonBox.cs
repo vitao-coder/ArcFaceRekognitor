@@ -7,7 +7,7 @@
         private readonly float boxRight;
         private readonly float boxBottom;
         private readonly float boxTop;
-        private readonly float[] landmark;
+        private float[] landmark;
 
         public PredictionBox(float score, float boxLeft, float boxTop, float boxRight, float boxBottom, float[] landmark)
         {
@@ -29,6 +29,16 @@
 
         public float BoxTop => boxTop;
 
-        public float[] Landmark => landmark;
+        public float[] Landmark
+        {
+            get
+            {
+                return landmark;
+            }
+            set
+            {
+                landmark = value;
+            }
+        }
     }
 }

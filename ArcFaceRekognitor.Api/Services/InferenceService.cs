@@ -14,23 +14,48 @@ namespace ArcFaceRekognitor.Api.Services
             _logger = logger;           
         }
 
-        public override Task<DetectionReply> Detector(DetectionRequest request, ServerCallContext context)
+        public override async Task<DetectorReply> Detector(DetectorRequest request, ServerCallContext context)
         {   
             try
             {
-                var score = _faceRecognize.CompareImage(request.ImageBytes1.ToArray(), request.ImageBytes2.ToArray());
+                var detection = await _faceRecognize.DetectImage(request.ImageBytes.ToArray());
 
-                return Task.FromResult(new DetectionReply()
+                return new DetectorReply()
                 {
-                    Message = "Score:" + score.ToString()
-                });
+                    Score = detection.Score,
+                    BoxLeft= detection.BoxLeft,
+                    BoxRight = detection.BoxRight,
+                    BoxTop = detection.BoxTop,
+                    BoxBottom = detection.BoxBottom,
+                    Landmark = { detection.Landmark }
+                };
             }
             catch(Exception ex)
             {
-                return Task.FromResult(new DetectionReply()
+                return new DetectorReply()
                 {
-                    Message = "Error:" + ex.Message.ToString()
-                });
+                    Error = ex.Message
+                };
+            }
+        }
+
+        public override async Task<ComparatorReply> Comparator(ComparatorRequest request, ServerCallContext context)
+        {
+            try
+            {
+                var score = await _faceRecognize.CompareImage(request.ImageBytes1.ToArray(), request.ImageBytes2.ToArray());
+
+                return new ComparatorReply()
+                {
+                    Score = score,                    
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ComparatorReply()
+                {
+                    Error = ex.Message
+                };
             }
         }
     }
