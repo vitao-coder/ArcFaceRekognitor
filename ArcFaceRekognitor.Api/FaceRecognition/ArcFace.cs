@@ -32,16 +32,20 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
                     Vec3b color = image.Get<Vec3b>(y, x);
                     input_tensor[0, 0, y, x] = (color.Item2 - 127.5f) / 127.5f;
                     input_tensor[0, 1, y, x] = (color.Item1 - 127.5f) / 127.5f;
-                    input_tensor[0, 2, y, x] = (color.Item0 - 127.5f) / 127.5f;
+                    input_tensor[0, 2, y, x] = (color.Item0 - 127.5f) / 127.5f;                    
                 }
             }
 
-            var container = new List<NamedOnnxValue>();      
-            container.Add(NamedOnnxValue.CreateFromTensor(input_name, input_tensor));
-     
-            IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = _onnxSession.Run(container);
+            var container = new List<NamedOnnxValue>
+            {
+                NamedOnnxValue.CreateFromTensor(input_name, input_tensor)
+            };
+            
 
+            IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = _onnxSession.Run(container);
+            
             var resultsArray = results.ToArray();
+        
             DisposableNamedOnnxValue nov = resultsArray[0];
             Tensor<float> tensor = nov.AsTensor<float>();
             float[] embedding = new float[tensor.Length];
@@ -56,7 +60,17 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
 
             for (int i = 0; i < embedding.Length; i++)
                 embedding[i] = embedding[i] / (float)l2;
+ 
+            results.Dispose();
+
+            foreach (var item in resultsArray)
+            {
+                item.Dispose();
+            }
+            nov.Dispose();
+            
             return embedding;
         }
+            
     }
 }

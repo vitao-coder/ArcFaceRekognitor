@@ -18,8 +18,10 @@
     },
     "Docker": {
       "commandName": "Docker",
-      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
-      "publishAllPorts": true
+      "launchUrl": "{Scheme}://{ServiceHost}",
+      "httpPort": 8080,
+      "sslPort": 8081,
+      "useSSL": true,
     },
     "WSL": {
       "commandName": "WSL2",

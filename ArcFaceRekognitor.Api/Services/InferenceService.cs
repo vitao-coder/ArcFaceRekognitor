@@ -32,10 +32,11 @@ namespace ArcFaceRekognitor.Api.Services
             }
             catch(Exception ex)
             {
+                _logger.LogError(ex, "Error in Detector");
                 return new DetectorReply()
                 {
                     Error = ex.Message
-                };
+                };                
             }
         }
 
@@ -52,10 +53,11 @@ namespace ArcFaceRekognitor.Api.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error in Comparator");
                 return new ComparatorReply()
                 {
                     Error = ex.Message
-                };
+                };             
             }
         }
     }

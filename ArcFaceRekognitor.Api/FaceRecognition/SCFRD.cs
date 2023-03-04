@@ -1,6 +1,7 @@
 ﻿using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using OpenCvSharp;
+using Point = OpenCvSharp.Point;
 using SessionOptions = Microsoft.ML.OnnxRuntime.SessionOptions;
 
 namespace ArcFaceRekognitor.Api.FaceRecognition
@@ -71,14 +72,15 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
                         input_tensor[0, 2, y, x] = (0 - 127.5f) / 128f;
                     }
 
-            var container = new List<NamedOnnxValue>();
-
-            container.Add(NamedOnnxValue.CreateFromTensor(input_name, input_tensor));
+            var container = new List<NamedOnnxValue>
+            {
+                NamedOnnxValue.CreateFromTensor(input_name, input_tensor)
+            };
 
 
             IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = _onnxSession.Run(container);
 
-            var resultsArray = results.ToArray();
+            var resultsArray = results.ToArray();           
 
             List<PredictionBox> preds = new List<PredictionBox>();
 
@@ -107,7 +109,7 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
                     }
                     catch (KeyNotFoundException)
                     {
-                        anchor_center = new List<Point>();
+                        anchor_center = new List<Point>();                        
                         for (int h = 0; h < sHeight; h++)
                             for (int w = 0; w < sWidth; w++)
                             {
@@ -129,13 +131,19 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
 
                     preds.Add(new PredictionBox(score, box[0], box[1], box[2], box[3], kps));
                 }
+                scores_nov.Dispose();
             }
 
+            dst.Dispose();
+            results.Dispose();
+            foreach (var item in resultsArray)
+            {
+                item.Dispose();
+            }
             if (preds.Count == 0)
                 return preds;
 
             preds = preds.OrderByDescending(a => a.Score).ToList();
-
             return NMS(preds, nms_threshold);
         }
 

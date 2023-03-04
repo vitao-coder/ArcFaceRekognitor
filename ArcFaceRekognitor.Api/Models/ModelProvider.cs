@@ -18,7 +18,7 @@ namespace ArcFaceRekognitor.Api.Models
         public ModelProvider(int ctx_id = 0)
         {
             SessionOptions options = new SessionOptions();
-            options.LogVerbosityLevel = Microsoft.ML.OnnxRuntime.LogLevel.Error;
+            options.LogVerbosityLevel = (int)Microsoft.ML.OnnxRuntime.LogLevel.Error;
             options.AppendExecutionProvider_CPU(0);
 
             var modelSCRFD = "./OriginalModel/scrfd_10g_bnkps_shape640x640OnnxV6.onnx";
