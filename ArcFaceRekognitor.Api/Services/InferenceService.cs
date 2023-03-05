@@ -3,7 +3,7 @@ using Grpc.Core;
 
 namespace ArcFaceRekognitor.Api.Services
 {
-    public class InferenceService : Inference.InferenceBase
+    public class InferenceService : Inference.InferenceBase, IDisposable
     {
         private readonly ILogger<InferenceService> _logger;
         private readonly FaceRecognize _faceRecognize;      
@@ -59,6 +59,12 @@ namespace ArcFaceRekognitor.Api.Services
                     Error = ex.Message
                 };             
             }
+        }
+
+        public void Dispose()
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
         }
     }
 }
