@@ -38,6 +38,7 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
             {
                 Mat image = Cv2.ImRead(fileName);
                 Register(image, System.IO.Path.GetFileNameWithoutExtension(fileName));
+                image.Release();
             }
         }
 
@@ -51,23 +52,36 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
 
         public async Task<double> CompareImage(byte[] imageBytes1, byte[]imageBytes2)
         {
-            var TaskBitmap1 = Task.Run(() =>
+            try
             {
-                var bitmap1 = getBitmapFromBytes(imageBytes1);
-                return bitmap1;
-            });
+                var TaskBitmap1 = Task.Run(() =>
+                {
+                    var bitmap1 = getBitmapFromBytes(imageBytes1);
+                    return bitmap1;
+                });
 
-            var TaskBitmap2 = Task.Run(() =>
+                var TaskBitmap2 = Task.Run(() =>
+                {
+                    var bitmap2 = getBitmapFromBytes(imageBytes2);
+                    return bitmap2;
+                });
+
+                var bitmap1 = await TaskBitmap1;
+                var bitmap2 = await TaskBitmap2;
+                TaskBitmap1.Dispose();
+                TaskBitmap2.Dispose();
+                return await CompareImage(bitmap1!, bitmap2!);
+            }
+            catch (Exception)
             {
-                var bitmap2 = getBitmapFromBytes(imageBytes2);
-                return bitmap2;
-            });
-
-            var bitmap1 = await TaskBitmap1;
-            var bitmap2 = await TaskBitmap2;
-            TaskBitmap1.Dispose();
-            TaskBitmap2.Dispose();
-            return await CompareImage(bitmap1!, bitmap2!);
+                throw;
+            }
+            finally
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+            }
         }
 
         public async Task<double> CompareImage(System.Drawing.Bitmap bitmap1, System.Drawing.Bitmap bitmap2)
@@ -109,8 +123,8 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
 
             float[] embedding1 = await TaskExtractPb1;
             float[] embedding2 = await TaskExtractPb2;
-            image1.Dispose(); 
-            image2.Dispose();
+            image1.Release();
+            image2.Release();
             TaskDetectPb1.Dispose();
             TaskDetectPb2.Dispose();
             TaskExtractPb1.Dispose();
@@ -120,10 +134,10 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
         }
 
         public async Task<double> CompareImage(float[] embeddingImage1, float[] embeddingImage2)
-        {
+        {  
             var TaskCompare = Task.Run(() =>
             {
-               var resultCompare = Compare(embeddingImage1, embeddingImage2);
+                var resultCompare = Compare(embeddingImage1, embeddingImage2);
                 return resultCompare;
             });
 
@@ -148,9 +162,22 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
 
         public async Task<PredictionBox> DetectImage(byte[] imageBytes)
         {
-            var bitmap = getBitmapFromBytes(imageBytes);
+            try
+            {
+                var bitmap = getBitmapFromBytes(imageBytes);
 
-            return await DetectImage(bitmap);
+                return await DetectImage(bitmap);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+            }
         }
 
         public async Task<PredictionBox> DetectImage(System.Drawing.Bitmap bitmap)
@@ -167,7 +194,7 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
                 var detected = detection[0];
                 var embedding = recognizer.Extract(image, detected.Landmark);
                 detected.Landmark = embedding;
-                image.Dispose();                
+                image.Release();                
                 return detected;
             });
 
@@ -189,6 +216,7 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
                         results.Add(user_id, pb);
                 }
             }
+            image.Release();
             return results;
         }
 

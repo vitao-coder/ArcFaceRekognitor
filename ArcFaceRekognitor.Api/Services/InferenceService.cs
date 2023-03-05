@@ -36,7 +36,13 @@ namespace ArcFaceRekognitor.Api.Services
                 return new DetectorReply()
                 {
                     Error = ex.Message
-                };                
+                };
+            }
+            finally
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
             }
         }
 
@@ -57,7 +63,13 @@ namespace ArcFaceRekognitor.Api.Services
                 return new ComparatorReply()
                 {
                     Error = ex.Message
-                };             
+                };
+            }
+            finally
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
             }
         }
 
@@ -65,6 +77,7 @@ namespace ArcFaceRekognitor.Api.Services
         {
             GC.Collect();
             GC.WaitForPendingFinalizers();
+            GC.Collect();
         }
     }
 }

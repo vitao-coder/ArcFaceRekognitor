@@ -134,7 +134,7 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
                 scores_nov.Dispose();
             }
 
-            dst.Dispose();
+            dst.Release();
             results.Dispose();
             foreach (var item in resultsArray)
             {

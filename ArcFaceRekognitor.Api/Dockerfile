@@ -134,4 +134,5 @@ COPY --from=publish /app/publish .
 COPY --from=finalWithOpenCV /usr/lib /usr/lib
 COPY ["ArcFaceRekognitor.Api/BuffaloModel/w600k_r50.onnx", "BuffaloModel/"]
 COPY ["ArcFaceRekognitor.Api/OriginalModel/scrfd_10g_bnkps_shape640x640OnnxV6.onnx", "OriginalModel/"]
+ENV MALLOC_TRIM_THRESHOLD_=100000
 ENTRYPOINT ["dotnet", "ArcFaceRekognitor.Api.dll"]

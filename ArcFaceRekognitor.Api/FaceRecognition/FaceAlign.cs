@@ -69,11 +69,11 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
 
             OpenCvSharp.Mat dst = new Mat();
             Cv2.WarpAffine(image, dst, M, new OpenCvSharp.Size(width, height));
-            S.Dispose();
-            Q.Dispose();
-            S1.Dispose();
-            MM.Dispose();
-            M.Dispose();
+            S.Release();
+            Q.Release();
+            S1.Release();
+            MM.Release();
+            M.Release();
 
             return dst;
         }
