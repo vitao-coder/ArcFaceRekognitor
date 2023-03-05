@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/aspnet:7.0-jammy AS base
+FROM mcr.microsoft.com/dotnet/aspnet:7.0-alpine AS base
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 443
@@ -32,37 +32,80 @@ FROM base AS finalWithOpenCV
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV OPENCV_VERSION=4.7.0
+
 WORKDIR /
 
-# Install opencv dependencies
-RUN apt-get update && apt-get -y install --no-install-recommends \
-      apt-transport-https \
-      software-properties-common \
-      wget \
-      unzip \
-      ca-certificates \
-      build-essential \
-      cmake \
-      git \
-      libtbb-dev \
-      libatlas-base-dev \
-      libgtk2.0-dev \
-      libavcodec-dev \
-      libavformat-dev \
-      libswscale-dev \
-      libdc1394-dev \
-      libxine2-dev \
-      libv4l-dev \
-      libtheora-dev \
-      libvorbis-dev \
-      libxvidcore-dev \
-      libopencore-amrnb-dev \
-      libopencore-amrwb-dev \
-      x264 \
-      libtesseract-dev \
-      libgdiplus \
-    && apt-get -y clean \
-    && rm -rf /var/lib/apt/lists/*
+# Add Edge repos
+RUN echo -e "\n\
+@edgemain http://nl.alpinelinux.org/alpine/edge/main\n\
+@edgecomm http://nl.alpinelinux.org/alpine/edge/community\n\
+@edgetest http://nl.alpinelinux.org/alpine/edge/testing"\
+  >> /etc/apk/repositories
+
+# Install required packages
+RUN apk update && apk upgrade && apk --no-cache add \
+  bash \
+  build-base \  
+  gcompat \
+  musl-utils \
+  ca-certificates \
+  clang-dev \
+  clang \
+  cmake \
+  coreutils \
+  curl \ 
+  freetype-dev \
+  ffmpeg-dev \
+  ffmpeg-libs \
+  gcc \
+  g++ \
+  git \
+  gettext \
+  gtk+3.0 \
+  gtk+2.0-dev \
+  glib-dev \  
+  lcms2-dev \
+  libavc1394-dev \
+  libc-dev \
+  libffi-dev \
+  libjpeg-turbo-dev \
+  libpng \
+  libpng-dev \
+  libressl-dev \
+  libtbb@edgetest \
+  libtbb-dev@edgetest \
+  libwebp-dev \
+  linux-headers \
+  libdc1394 \
+  eigen \
+  eigen-dev \
+  harfbuzz \
+  make \
+  libprotobuf \
+  musl \
+  ccache \
+  python3-dev \  
+  py3-pip \
+  gflags \
+  glog \  
+  openblas@edgecomm \
+  openblas-dev@edgecomm \
+  openjpeg-dev \
+  openssl \
+  tiff-dev \
+  libstdc++ \
+  unzip \
+  zlib-dev \
+  tesseract-ocr-dev 
+
+# Python 3 as default
+RUN ln -s /usr/bin/python3 /usr/local/bin/python && \
+  ln -s /usr/bin/pip3 /usr/local/bin/pip && \
+  pip install --upgrade pip
+
+# Install NumPy
+RUN ln -s /usr/include/locale.h /usr/include/xlocale.h && \
+  pip install numpy
 
 # Setup opencv and opencv-contrib source
 RUN wget -q https://github.com/opencv/opencv/archive/${OPENCV_VERSION}.zip && \
@@ -114,18 +157,20 @@ RUN cd opencv && mkdir build && cd build && \
     -D WITH_GSTREAMER=OFF \
     -D WITH_ADE=OFF \
     -D OPENCV_ENABLE_NONFREE=ON \
-    .. && make -j$(nproc) && make install
+    .. && make -j$(nproc) && make install && ldconfig
+
+WORKDIR /
 
 # Download OpenCvSharp
-RUN git clone https://github.com/shimat/opencvsharp.git && cd opencvsharp
+RUN git clone https://github.com/shimat/opencvsharp.git
+RUN cd opencvsharp && git fetch --all --tags --prune
 
 # Install the Extern lib.
-RUN mkdir /opencvsharp/make && cd /opencvsharp/make && \
-    cmake -D CMAKE_INSTALL_PREFIX=/opencvsharp/make /opencvsharp/src && \
-    make -j$(nproc) && make install && \
-    rm -rf /opencv && \
-    rm -rf /opencv_contrib && \
-    cp /opencvsharp/make/OpenCvSharpExtern/libOpenCvSharpExtern.so /usr/lib/
+WORKDIR /opencvsharp/src
+RUN mkdir /opencvsharp/make
+RUN cd /opencvsharp/make && cmake /opencvsharp/src && make -j$(nproc) && make install
+
+ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/local/share/opencv4/lib/:/usr/local/lib/:/lib/x86_64-linux-gnu/"
 
 FROM base AS final
 
@@ -134,4 +179,4 @@ COPY --from=publish /app/publish .
 COPY --from=finalWithOpenCV /usr/lib /usr/lib
 COPY ["ArcFaceRekognitor.Api/BuffaloModel/w600k_r50.onnx", "BuffaloModel/"]
 COPY ["ArcFaceRekognitor.Api/OriginalModel/scrfd_10g_bnkps_shape640x640OnnxV6.onnx", "OriginalModel/"]
-ENTRYPOINT ["dotnet", "ArcFaceRekognitor.Api.dll"]
+ENTRYPOINT [ "./ArcFaceRekognitor.Api"]

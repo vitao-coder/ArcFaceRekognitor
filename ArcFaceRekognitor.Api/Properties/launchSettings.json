@@ -22,6 +22,7 @@
       "httpPort": 8080,
       "sslPort": 8081,
       "useSSL": true,
+      "DockerfileRunArguments": "--platform=linux/x86_64"
     },
     "WSL": {
       "commandName": "WSL2",
