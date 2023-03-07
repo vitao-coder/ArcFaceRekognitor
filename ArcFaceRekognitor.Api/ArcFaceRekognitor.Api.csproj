@@ -9,7 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Protobuf Include="Protos\Inference.proto" GrpcServices="Server" />
+    <None Remove="Protos\Comparator.proto" />
+    <None Remove="Protos\Detector.proto" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Protos\Comparator.proto" GrpcServices="Server" />
+    <Protobuf Include="Protos\Detector.proto" GrpcServices="Server" />
   </ItemGroup>
 
   <ItemGroup>

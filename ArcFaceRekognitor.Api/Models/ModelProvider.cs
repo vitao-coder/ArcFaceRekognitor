@@ -5,7 +5,6 @@ namespace ArcFaceRekognitor.Api.Models
 {
     public class ModelProvider : IDisposable
     {
-        //Dictionary<ModelType, InferenceSession> models = new Dictionary<ModelType, InferenceSession>();
         InferenceSession _sessionSCRFD;
         InferenceSession _sessionBuffallo;
 
@@ -27,18 +26,13 @@ namespace ArcFaceRekognitor.Api.Models
             byte[] modelSCRFDBytes = File.ReadAllBytes(modelSCRFD);
             _sessionSCRFD = new InferenceSession(modelSCRFDBytes, options);
 
-            //models.Add(ModelType.ScRfd, sessionSCRFD);
-
             var modelBuffallo = "./BuffaloModel/w600k_r50.onnx";
             byte[] modelBuffalloBytes = File.ReadAllBytes(modelBuffallo);
             _sessionBuffallo = new InferenceSession(modelBuffalloBytes, options);
-            //models.Add(ModelType.Buffalo, sessionBuffallo);
-
         }
 
         public InferenceSession? GetSession(ModelType modelType)
         {
-            //if (models.TryGetValue(modelType, out var session)) return session;
             switch (modelType)
             {
                 case ModelType.ScRfd:

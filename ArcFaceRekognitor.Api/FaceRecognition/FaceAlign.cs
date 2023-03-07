@@ -10,21 +10,21 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
         static public Image<Rgb24> Align(Image<Rgb24> image, float[] landmarks, int width, int height)
         {
             float dy = landmarks[3] - landmarks[1], dx = landmarks[2] - landmarks[0];
-            double angle = Math.Atan2(dy, dx) * 180f / Math.PI;
+            double angle = System.Math.Atan2(dy, dx) * 180f / System.Math.PI;
 
             float[] eye_center = new float[] { (landmarks[0] + landmarks[2]) / 2, (landmarks[1] + landmarks[3]) / 2 };
             float[] lip_center = new float[] { (landmarks[6] + landmarks[8]) / 2, (landmarks[7] + landmarks[9]) / 2 };
 
-            float dis = (float)Math.Sqrt(Math.Pow(eye_center[0] - lip_center[0], 2) + Math.Pow(eye_center[1] - lip_center[1], 2)) / 0.35f;
+            float dis = (float)System.Math.Sqrt(System.Math.Pow(eye_center[0] - lip_center[0], 2) + System.Math.Pow(eye_center[1] - lip_center[1], 2)) / 0.35f;
 
-            int bottom = (int)Math.Round(dis * 0.65, MidpointRounding.AwayFromZero);
-            int top = (int)Math.Round(dis - bottom, MidpointRounding.AwayFromZero);
-            int left = (int)Math.Round(width * dis / height / 2, MidpointRounding.AwayFromZero);
+            int bottom = (int)System.Math.Round(dis * 0.65, MidpointRounding.AwayFromZero);
+            int top = (int)System.Math.Round(dis - bottom, MidpointRounding.AwayFromZero);
+            int left = (int)System.Math.Round(width * dis / height / 2, MidpointRounding.AwayFromZero);
 
-            int[] center = new int[] { (int)Math.Round(eye_center[0], MidpointRounding.AwayFromZero), (int)Math.Round(eye_center[1], MidpointRounding.AwayFromZero) };
+            int[] center = new int[] { (int)System.Math.Round(eye_center[0], MidpointRounding.AwayFromZero), (int)System.Math.Round(eye_center[1], MidpointRounding.AwayFromZero) };
 
-            int x1 = Math.Max(center[0] - 2 * bottom, 0), y1 = Math.Max(center[1] - 2 * bottom, 0);
-            int x2 = Math.Min(center[0] + 2 * bottom, image.Width - 1), y2 = Math.Min(center[1] + 2 * bottom, image.Height - 1);
+            int x1 = System.Math.Max(center[0] - 2 * bottom, 0), y1 = System.Math.Max(center[1] - 2 * bottom, 0);
+            int x2 = System.Math.Min(center[0] + 2 * bottom, image.Width - 1), y2 = System.Math.Min(center[1] + 2 * bottom, image.Height - 1);
             image.Mutate(img => img.Crop(new Rectangle(x1, y1, x2 - x1 + 1, y2 - y1 + 1)));
 
             int i_size = 4 * bottom + 1;

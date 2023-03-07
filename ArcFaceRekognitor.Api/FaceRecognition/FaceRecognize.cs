@@ -9,8 +9,8 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
     {
         private SCRFD detector;
         private ArcFace recognizer;
-        private readonly float reco_threshold;
-        private readonly float dete_threshold;
+        public readonly float reco_threshold;
+        public readonly float dete_threshold;
         private readonly ModelProvider _modelprovider;
 
         private Dictionary<string, float[]> faces_embedding;
@@ -18,7 +18,7 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
         public FaceRecognize(ModelProvider modelprovider, int ctx_id = 0, float dete_threshold = 0.50f, float reco_threshold = 1.24f)
         {
             _modelprovider = modelprovider;
-            var detectorSession = _modelprovider.GetSession(ModelProvider.ModelType.ScRfd);           
+            var detectorSession = _modelprovider.GetSession(ModelProvider.ModelType.ScRfd);
             detector = new SCRFD(detectorSession!);
 
             var recognizerSession = _modelprovider.GetSession(ModelProvider.ModelType.Buffalo);
@@ -43,7 +43,14 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
             }
         }
 
-        public async Task<double> CompareImage(byte[] imageBytes1, byte[] imageBytes2)
+        public struct ResultCompare
+        {
+            public double Score;
+            public float[] embedding1;
+            public float[] embedding2;
+        }
+
+        public async Task<ResultCompare> CompareImage(byte[] imageBytes1, byte[] imageBytes2)
         {
             try
             {
@@ -102,7 +109,14 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
                 TaskExtractPb1.Dispose();
                 TaskExtractPb2.Dispose();
 
-                return await CompareImage(embedding1, embedding2);
+                var result = new ResultCompare
+                {
+                    Score = await CompareImage(embedding1, embedding2),
+                    embedding1 = embedding1,
+                    embedding2 = embedding2
+                };
+
+                return result;
             }
             catch (Exception)
             {
@@ -111,11 +125,11 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
             finally
             {
                 GC.Collect();
-            }      
+            }
         }
 
         public async Task<double> CompareImage(float[] embeddingImage1, float[] embeddingImage2)
-        {  
+        {
             var TaskCompare = Task.Run(() =>
             {
                 var resultCompare = Compare(embeddingImage1, embeddingImage2);
@@ -141,12 +155,13 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
             return 0;
         }
 
-       public async Task<PredictionBox> DetectImage(byte[] imageBytes)
+        public async Task<PredictionBox> DetectImage(byte[] imageBytes)
         {
             try
             {
-                var taskDetect = Task.Factory.StartNew(async () => {
-                    
+                var taskDetect = Task.Factory.StartNew(async () =>
+                {
+
                     var TaskMat1 = Task.Factory.StartNew(() =>
                     {
                         using (var ms1 = new MemoryStream(imageBytes))
@@ -161,17 +176,17 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
                     {
                         return detector.Detect(image, dete_threshold);
                     });
-                    
+
                     var detection = await TaskDetect;
                     if (detection.Count > 1) throw new InvalidOperationException("More than one face detected");
                     if (detection.Count == 0) throw new InvalidOperationException("Not detected any face");
 
                     var TaskExtract = Task.Factory.StartNew(async () =>
-                    {                        
+                    {
                         float[] embedding1 = recognizer.Extract(image, detection[0].Landmark);
                         return embedding1;
                     });
-                    
+
                     var detected = detection[0];
                     var embedding = await TaskExtract.Unwrap();
                     detected.Landmark = embedding;
@@ -192,28 +207,7 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
             {
                 GC.Collect();
             }
-        }
-
-        /*public async Task<PredictionBox> DetectImage(Bitmap bitmap)
-        {
-            var taskDetect = Task.Run(() => {
-
-                Mat image = OpenCvSharp.Extensions.BitmapConverter.ToMat(bitmap);
-                bitmap.Dispose();
-
-                var detection = detector.Detect(image, dete_threshold);
-                if (detection.Count > 1) throw new InvalidOperationException("More than one face detected");
-                if (detection.Count == 0) throw new InvalidOperationException("Not detected any face");
-
-                var detected = detection[0];
-                var embedding = recognizer.Extract(image, detected.Landmark);
-                detected.Landmark = embedding;
-                image.Release();                
-                return detected;
-            });
-
-            return await taskDetect;
-        }*/
+        }               
 
         public Dictionary<string, PredictionBox> Recognize(System.Drawing.Bitmap bitmap)
         {
@@ -238,7 +232,7 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
         {
             double result = 0;
             for (int i = 0; i < faceA.Length; i++)
-                result = result + Math.Pow(faceA[i] - faceB[i], 2);
+                result = result + System.Math.Pow(faceA[i] - faceB[i], 2);
             return result;
         }
     }

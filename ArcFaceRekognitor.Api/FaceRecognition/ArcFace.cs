@@ -54,9 +54,9 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
             for (int i = 0; i < tensor.Length; i++)
             {
                 embedding[i] = tensor[0, i];
-                l2 = l2 + Math.Pow((double)tensor[0, i], 2);
+                l2 = l2 + System.Math.Pow((double)tensor[0, i], 2);
             }
-            l2 = Math.Sqrt(l2);
+            l2 = System.Math.Sqrt(l2);
 
             for (int i = 0; i < embedding.Length; i++)
                 embedding[i] = embedding[i] / (float)l2;

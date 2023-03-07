@@ -181,10 +181,10 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
             float by2 = PB2.BoxBottom;
             float bx2 = PB2.BoxRight;
 
-            float x_left = Math.Max(ax1, bx1);
-            float y_top = Math.Max(ay1, by1);
-            float x_right = Math.Min(ax2, bx2);
-            float y_bottom = Math.Min(ay2, by2);
+            float x_left = System.Math.Max(ax1, bx1);
+            float y_top = System.Math.Max(ay1, by1);
+            float x_right = System.Math.Min(ax2, bx2);
+            float y_bottom = System.Math.Min(ay2, by2);
 
             if (x_right < x_left || y_bottom < y_top)
                 return 0;
