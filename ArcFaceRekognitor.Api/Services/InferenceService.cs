@@ -40,9 +40,7 @@ namespace ArcFaceRekognitor.Api.Services
             }
             finally
             {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                GC.Collect();
+                GC.Collect();                                                
             }
         }
 
@@ -68,15 +66,11 @@ namespace ArcFaceRekognitor.Api.Services
             finally
             {
                 GC.Collect();
-                GC.WaitForPendingFinalizers();
-                GC.Collect();
             }
         }
 
         public void Dispose()
         {
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
             GC.Collect();
         }
     }

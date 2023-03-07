@@ -1,6 +1,7 @@
 ﻿using OpenCvSharp;
 using ArcFaceRekognitor.Api.Models;
 using System.Drawing;
+using System.IO;
 
 namespace ArcFaceRekognitor.Api.FaceRecognition
 {
@@ -42,35 +43,66 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
             }
         }
 
-        private Bitmap? getBitmapFromBytes(byte[] image)
-        {
-            using (var ms = new MemoryStream(image))
-            {
-                return new Bitmap(ms);
-            }
-        }
-
-        public async Task<double> CompareImage(byte[] imageBytes1, byte[]imageBytes2)
+        public async Task<double> CompareImage(byte[] imageBytes1, byte[] imageBytes2)
         {
             try
             {
-                var TaskBitmap1 = Task.Run(() =>
+                Mat image1;
+                Mat image2;
+
+                var TaskMat1 = Task.Factory.StartNew(() =>
                 {
-                    var bitmap1 = getBitmapFromBytes(imageBytes1);
-                    return bitmap1;
+                    using (var ms1 = new MemoryStream(imageBytes1))
+                    {
+                        return Mat.FromStream(ms1, ImreadModes.Unchanged);
+                    }
+                });
+                var TaskMat2 = Task.Factory.StartNew(() =>
+                {
+                    using (var ms2 = new MemoryStream(imageBytes2))
+                    {
+                        return Mat.FromStream(ms2, ImreadModes.Unchanged);
+                    }
+                });
+                image1 = await TaskMat1;
+                image2 = await TaskMat2;
+
+                var TaskDetectPb1 = Task.Factory.StartNew(() =>
+                {
+                    return detector.Detect(image1, dete_threshold);
                 });
 
-                var TaskBitmap2 = Task.Run(() =>
+                var TaskDetectPb2 = Task.Factory.StartNew(() =>
                 {
-                    var bitmap2 = getBitmapFromBytes(imageBytes2);
-                    return bitmap2;
+                    return detector.Detect(image2, dete_threshold);
                 });
 
-                var bitmap1 = await TaskBitmap1;
-                var bitmap2 = await TaskBitmap2;
-                TaskBitmap1.Dispose();
-                TaskBitmap2.Dispose();
-                return await CompareImage(bitmap1!, bitmap2!);
+
+                var TaskExtractPb1 = Task.Factory.StartNew(async () =>
+                {
+                    var pbs1 = await TaskDetectPb1;
+                    float[] embedding1 = recognizer.Extract(image1, pbs1[0].Landmark);
+                    return embedding1;
+                }).Unwrap();
+
+
+                var TaskExtractPb2 = Task.Factory.StartNew(async () =>
+                {
+                    var pbs2 = await TaskDetectPb2;
+                    float[] embedding2 = recognizer.Extract(image2, pbs2[0].Landmark);
+                    return embedding2;
+                }).Unwrap();
+
+                float[] embedding1 = await TaskExtractPb1;
+                float[] embedding2 = await TaskExtractPb2;
+                image1.Release();
+                image2.Release();
+                TaskDetectPb1.Dispose();
+                TaskDetectPb2.Dispose();
+                TaskExtractPb1.Dispose();
+                TaskExtractPb2.Dispose();
+
+                return await CompareImage(embedding1, embedding2);
             }
             catch (Exception)
             {
@@ -79,58 +111,7 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
             finally
             {
                 GC.Collect();
-                GC.WaitForPendingFinalizers();
-                GC.Collect();
-            }
-        }
-
-        public async Task<double> CompareImage(System.Drawing.Bitmap bitmap1, System.Drawing.Bitmap bitmap2)
-        {
-            Mat image1 = OpenCvSharp.Extensions.BitmapConverter.ToMat(bitmap1);
-            Mat image2 = OpenCvSharp.Extensions.BitmapConverter.ToMat(bitmap2);
-            bitmap1.Dispose();
-            bitmap2.Dispose();
-
-
-            var TaskDetectPb1 = Task.Run(() =>
-            {
-                List<PredictionBox> pbs1 = detector.Detect(image1, dete_threshold);
-                return pbs1;
-            });
-
-            var TaskDetectPb2 = Task.Run(() =>
-            {
-                List<PredictionBox> pbs2 = detector.Detect(image2, dete_threshold);
-                return pbs2;
-            });
-
-
-            var TaskExtractPb1 = Task.Run(async () =>
-            {
-                var pbs1 = await TaskDetectPb1;
-                float[] embedding1 = recognizer.Extract(image1, pbs1[0].Landmark);
-                return embedding1;
-            });
-
-
-            var TaskExtractPb2 = Task.Run(async () =>
-            {
-                var pbs2 = await TaskDetectPb2;
-                float[] embedding2 = recognizer.Extract(image2, pbs2[0].Landmark);
-                return embedding2;
-            });
-
-
-            float[] embedding1 = await TaskExtractPb1;
-            float[] embedding2 = await TaskExtractPb2;
-            image1.Release();
-            image2.Release();
-            TaskDetectPb1.Dispose();
-            TaskDetectPb2.Dispose();
-            TaskExtractPb1.Dispose();
-            TaskExtractPb2.Dispose();
-
-            return await CompareImage(embedding1, embedding2);
+            }      
         }
 
         public async Task<double> CompareImage(float[] embeddingImage1, float[] embeddingImage2)
@@ -160,13 +141,48 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
             return 0;
         }
 
-        public async Task<PredictionBox> DetectImage(byte[] imageBytes)
+       public async Task<PredictionBox> DetectImage(byte[] imageBytes)
         {
             try
             {
-                var bitmap = getBitmapFromBytes(imageBytes);
+                var taskDetect = Task.Factory.StartNew(async () => {
+                    
+                    var TaskMat1 = Task.Factory.StartNew(() =>
+                    {
+                        using (var ms1 = new MemoryStream(imageBytes))
+                        {
+                            return Mat.FromStream(ms1, ImreadModes.Unchanged);
+                        }
+                    });
 
-                return await DetectImage(bitmap);
+                    Mat image = await TaskMat1;
+
+                    var TaskDetect = Task.Factory.StartNew(() =>
+                    {
+                        return detector.Detect(image, dete_threshold);
+                    });
+                    
+                    var detection = await TaskDetect;
+                    if (detection.Count > 1) throw new InvalidOperationException("More than one face detected");
+                    if (detection.Count == 0) throw new InvalidOperationException("Not detected any face");
+
+                    var TaskExtract = Task.Factory.StartNew(async () =>
+                    {                        
+                        float[] embedding1 = recognizer.Extract(image, detection[0].Landmark);
+                        return embedding1;
+                    });
+                    
+                    var detected = detection[0];
+                    var embedding = await TaskExtract.Unwrap();
+                    detected.Landmark = embedding;
+                    image.Release();
+                    TaskMat1.Dispose();
+                    TaskDetect.Dispose();
+                    TaskExtract.Dispose();
+                    return detected;
+                });
+
+                return await taskDetect.Unwrap();
             }
             catch (Exception)
             {
@@ -175,12 +191,10 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
             finally
             {
                 GC.Collect();
-                GC.WaitForPendingFinalizers();
-                GC.Collect();
             }
         }
 
-        public async Task<PredictionBox> DetectImage(System.Drawing.Bitmap bitmap)
+        /*public async Task<PredictionBox> DetectImage(Bitmap bitmap)
         {
             var taskDetect = Task.Run(() => {
 
@@ -199,7 +213,7 @@ namespace ArcFaceRekognitor.Api.FaceRecognition
             });
 
             return await taskDetect;
-        }
+        }*/
 
         public Dictionary<string, PredictionBox> Recognize(System.Drawing.Bitmap bitmap)
         {

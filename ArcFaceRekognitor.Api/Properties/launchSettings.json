@@ -17,15 +17,12 @@
       "applicationUrl": "https://localhost:7261;http://localhost:5193"
     },
     "Docker": {
-      "environmentVariables": {
-        "MALLOC_TRIM_THRESHOLD_": 100000
-      },
       "commandName": "Docker",
       "launchUrl": "{Scheme}://{ServiceHost}",
+      "DockerfileRunArguments": "--memory-reservation 800m -m 950m --memory-swap 951m --platform=linux/x86_64",
       "httpPort": 8080,
       "sslPort": 8081,
-      "useSSL": true,
-      "DockerfileRunArguments": "--platform=linux/x86_64"
+      "useSSL": true,      
     },
     "WSL": {
       "commandName": "WSL2",
