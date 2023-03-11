@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/aspnet:7.0-jammy AS base
 WORKDIR /app
-EXPOSE 8082
-EXPOSE 8081
+EXPOSE 80
+EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0-alpine  AS build  
 WORKDIR /src
