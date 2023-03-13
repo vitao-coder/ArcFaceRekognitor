@@ -19,13 +19,13 @@
     },
     "Docker": {
       "environmentVariables": {
-        "ASPNETCORE_URLS": "https://*:8087;http://*:8086"
+        "ASPNETCORE_URLS": "https://*:443;http://*:8080"
       },
       "commandName": "Docker",
       "launchUrl": "{Scheme}://{ServiceHost}",
       "DockerfileRunArguments": "--memory-reservation 800m -m 950m --memory-swap 951m --platform=linux/x86_64",
-      "httpPort": 8086,
-      "sslPort": 8087,
+      "httpPort": 8080,
+      "sslPort": 443,
       "useSSL": true
     },
     "WSL": {

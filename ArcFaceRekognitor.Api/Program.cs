@@ -16,7 +16,7 @@ builder.Services.AddGrpc();
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.ListenAnyIP(443);
-    options.ListenAnyIP(80, listenOptions =>
+    options.ListenAnyIP(8080, listenOptions =>
     {
         listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
     });
