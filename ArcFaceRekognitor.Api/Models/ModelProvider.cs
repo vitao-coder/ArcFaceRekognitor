@@ -19,12 +19,11 @@ namespace ArcFaceRekognitor.Api.Models
         public ModelProvider()
         {
             SessionOptions options = new();
-            options.LogVerbosityLevel = (int)Microsoft.ML.OnnxRuntime.LogLevel.Error;
-            options.AppendExecutionProvider_CPU(0);
+            options.InterOpNumThreads = 2;
+            options.IntraOpNumThreads = 2;
             options.ExecutionMode = ExecutionMode.ORT_PARALLEL;
-            options.InterOpNumThreads = 4;
-            options.IntraOpNumThreads = 4;    
-                  
+            options.LogVerbosityLevel = (int)Microsoft.ML.OnnxRuntime.LogLevel.Error;
+            options.AppendExecutionProvider_CPU(0);                  
 
             var modelSCRFD = "./OriginalModel/scrfd_10g_bnkps_shape640x640OnnxV6.onnx";
             byte[] modelSCRFDBytes = File.ReadAllBytes(modelSCRFD);
